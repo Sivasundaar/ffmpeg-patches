@@ -1,0 +1,32 @@
+From d176eca2e239f0f2fe4648ef1e17daffb7f1feb6 Mon Sep 17 00:00:00 2001
+From: Sivasundaar P <sivasundaar@gmail.com>
+Date: Sat, 18 Oct 2025 16:24:47 +0530
+Subject: [PATCH] [HEVC] Fix PCM coding block length derivation for YUV400
+
+Fixes incorrect byte skipping when chroma_format_idc == 0 by skipping chroma calculation for YUV400 PCM blocks.
+
+Signed-off-by: Sivasundaar P <sivasundaar@gmail.com>
+---
+ libavcodec/hevc/hevcdec.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index 8d432a9a1f..7a193af976 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -1668,9 +1668,11 @@ static int hls_pcm_sample(HEVCLocalContext *lc, const HEVCLayerContext *l,
+     uint8_t *dst2 = &s->cur_frame->f->data[2][(y0 >> sps->vshift[2]) * stride2 + ((x0 >> sps->hshift[2]) << sps->pixel_shift)];
+ 
+     int length         = cb_size * cb_size * sps->pcm.bit_depth +
++                         (sps->chroma_format_idc !=0 ?
+                          (((cb_size >> sps->hshift[1]) * (cb_size >> sps->vshift[1])) +
+                           ((cb_size >> sps->hshift[2]) * (cb_size >> sps->vshift[2]))) *
+-                          sps->pcm.bit_depth_chroma;
++                          sps->pcm.bit_depth_chroma
++                          : 0);
+     const uint8_t *pcm = skip_bytes(&lc->cc, (length + 7) >> 3);
+     int ret;
+ 
+-- 
+2.51.0
+
